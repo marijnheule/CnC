@@ -227,6 +227,16 @@ int main(int argc, char** argv)
  	if (res != NULL) fclose(res);
  	gzclose(in);
 
+        printf("\n");
+        printf(ret == l_True ? "s SATISFIABLE\n" : ret == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+        if(ret==l_True) {
+          printf("v ");
+          for (int i = 0; i < S.nVars(); i++)
+            if (S.model[i] != l_Undef)
+              printf("%s%s%d", (i==0)?"":" ", (S.model[i]==l_True)?"":"-", i+1);
+          printf(" 0\n");
+        }
+
  	if (S.verbosity == 0){
  	  printf("\n");
  	  printStats(S);
