@@ -29,7 +29,7 @@ Parameters
 ==========
 
 Both scripts can be extended by the commandline parameters of march:
-
+```
 c march_cu help
 c USAGE: ./march_cu <input-file> [options]
 
@@ -69,3 +69,4 @@ c MAGIC CONSTANTS:
    -max <float>  maximum heuristic value   (default:  25.00)
    -sli <int>    singlelook iterations     (default:      9)
    -dli <int>    doublelook iterations     (default:      2)
+```
