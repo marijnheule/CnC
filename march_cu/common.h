@@ -78,9 +78,12 @@
 #define WFR			  1  // on
 #define IMP			  1  // on
 
-#define H_MIN			0.1
-#define H_MAX		       25.0
-#define H_BIN			3.3
+#define H_MIN			8.0
+#define H_MAX		      550.0
+#define H_BIN		       25.0
+//#define H_MIN			0.1
+//#define H_MAX		       25.0
+//#define H_BIN			3.3
 #define H_DEC			0.5
 
 #define SL_ITER			  9
@@ -363,6 +366,7 @@ int *clause_red_depth;
 */
 
 char cubesFile[1024];
+char initFile[1024];
 
 unsigned int seed, hardLimit;
 int *trail, trailSize;

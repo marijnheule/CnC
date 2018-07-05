@@ -23,6 +23,9 @@ int _nr_cubes;
 int num_refuted, num_cubes;
 long long sum_refuted, sum_cubes;
 
+int getNodes () {
+  return num_cubes + num_refuted; }
+
 int Dnode_left (int index) {
   return Dnodes[ index ].left; }
 

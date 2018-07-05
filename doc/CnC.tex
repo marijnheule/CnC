@@ -1,0 +1,650 @@
+\let\accentvec\vec
+\documentclass{llncs}
+\usepackage{llncsdoc}
+\let\spvec\vec
+\let\vec\accentvec
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{pstricks}
+\usepackage{pst-node}
+\usepackage{pstricks-add}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsfonts}
+\usepackage{multirow}
+\usepackage{fancyvrb}
+
+
+\newcommand{\pr}{\mathsf{PR}}
+\newcommand{\drat}{\mathsf{DRAT}}
+
+\title{Cube-and-Conquer Tutorial}
+
+\author{Marijn J.H. Heule}
+
+\institute{The University of Texas at Austin}
+
+
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This tutorial describes how to obtain, install, and use the cube-and-conquer solver
+based on cube solver {\tt march\_cu}. We describe the main options as well as 
+some best practices to solve hard problems. The repository also includes the conquer solvers
+{\tt iGlucose} and {\tt iLingeling}, scripts that combine the solvers, and benchmarks.
+\end{abstract}
+
+
+\section{Introduction}
+
+Cube-and-conquer is a parallel solving approach which combines the two main complete paradigms to solve 
+satisfiability (SAT) problems. The first and most popular paradigm is 
+{\em conflict-driven clause learning} (CDCL). Solvers based on the CDCL paradigm can efficiently solve many
+problems arising from interesting applications in both industry and science --- including problems that
+have millions of variables and clauses. The main strength of CDCL solvers is that they can frequently
+find a short refutation cheaply (if one exists) or produce a satisfying assignment. Its core reasoning technique
+is generalizing conflicting assignments into conflict clauses, which are added to the formula.
+Although effective on a broad range of applications, CDCL solvers tend to show poor performance on
+really hard problems, i.e, problems that require more than several hours of computational time. 
+
+The second paradigm, called {\em look-ahead}, focusses on recursively splitting a given formula into 
+smaller subproblems. In each step, a splitting variable is selected and the formula is partitioned into
+a copy that assigns the splitting variable to true and a copy that assigns the splitting variable to false.
+The splitting variables are picked using look-aheads:
+A look-ahead consists of the following steps: select a literal; assign it to true; and simplify the
+formula under that assignment. The heuristic value of a look-ahead is the difference between the formula before 
+and after look-ahead, typically measured by computed a weighted sum of the clauses that are reduced, but not satisfied by
+during the simplification.
+
+Cube-and-conquer is more efficient than both pure CDCL and pure look-ahead solvers on many 
+hard problems. The name originated from combining the concepts of a cube (a conjunction of literals) and the
+divide-and-conquer approach. Given a formula, a look-ahead solver ---also referred to as the cube 
+solver--- produces a set of cubes. Each cube is a compact representation of a subproblem:
+The subproblem can be obtained by joining the cube and the  formula. The CDCL solver ---also 
+referred to as the conquer solver--- solves the subproblems, ideally in parallel.
+
+
+\section{Installation}
+
+The sources can be obtained by cloning the repository as follows:
+
+\begin{verbatim}
+   git clone https://github.com/marijnheule/CnC
+\end{verbatim}
+
+\noindent
+These sources can be compiled using the build script in the main directory:
+
+\begin{verbatim}
+   ./build.sh
+\end{verbatim}
+
+\noindent
+The same script also allows to remove the binary files (including the executables):
+
+\begin{verbatim}
+   ./build.sh clean
+\end{verbatim}
+
+\noindent
+There is also a script to test whether the tools are working properly. This script
+partitions an equivalence checking benchmark {\tt eq.atree.braun.8.unsat.cnf} 
+in roughly 0.5 seconds and the conquer solvers can solve the resulting 
+subformulas in about 3 seconds.
+
+\begin{verbatim}
+   ./test.sh
+\end{verbatim}
+
+\section{Basic Usage}
+\label{sec:basic}
+
+The CnC repository comes with three tools: one cube (look-ahead) solver 
+{\tt march\_cu} and two conquer (incremental CDCL) solvers 
+{\tt iGlucose} and {\tt iLingeling}. The basic usage is to split a given 
+problem into many subproblems using the cube solver and afterwards
+solve the subproblems using one of the conquer solvers. The repository
+comes with two scripts to perform these actions, {\tt cube-glucose.sh}
+and {\tt cube-lingeling.sh}, which will use {\tt iGlucose} respectively {\tt iLingeling}
+to solve the subproblems.
+
+Figure~\ref{fig:EDP} shows an example run on the Erd\H{o}s Discrepancy Problem with 
+discrepancy 2 using {\tt cube-lingeling.sh}. This problem was open for 
+decades and a Polymath project was started to solve it. The 
+discrepancy 2 case was first solved using SAT and cube-and-conquer
+is the most efficient way to prove unsatisfiability of transition of SAT
+to UNSAT (which is at 1161). Using the default settings, {\tt march\_cu}
+generates 64941 cubes in 189.72 seconds. Afterwards,  {\tt iLingeling}
+solves the 64941 subproblems in 448.55 seconds using 8 threads
+on a MacBook Pro with CPU with 4 cores. The number of threads can
+be adjusted by editing the CORES parameter in the {\tt cube-lingeling.sh} script.
+The {\tt cube-glucose.sh} script does not support solving cubes in parallel.
+However, for most hard problems, this is not an issue as they are solved 
+using a two-level partition (see Section~\ref{sec:two-level}).
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
+./cube-lingeling benchmarks/EDP2_1161.cnf
+c down fraction = 0.020 and down exponent = 0.300
+c cubes are emitted to /tmp/cubes42340
+c CNF of 4207 variables and 25142 clauses based on DIMACS p-line.
+c equivalence reasoning is turned off.
+c magic constants: min = 8.00, bin = 25.00, and max = 550.00
+c init_lookahead: longest clause has size 3
+c number of free variables = 4207
+c highest active variable  = 4207
+c dynamic_preselect_setsize :: off
+c |****************************************************************.|
+c
+c main():: nodeCount: 64941
+c main():: dead ends in main: 36
+c main():: lookAheadCount: 228251450
+c main():: unitResolveCount: 3913316
+c time = 189.72 seconds
+c main():: necessary_assignments: 57277
+c print learnt clauses and cubes
+c number of cubes 64941, including 1519 refuted leaves
+c average weight cubes 4015.178, average weights leaves 3977.193
+c 64941 / 64941 |====================| 100% 0.0550 sec/cube 
+s UNSATISFIABLE
+
+real	7m28.545s
+user	56m6.822s
+sys	0m19.779s
+\end{verbatim}
+\caption{Example run of {\tt cube-lingeling.sh} on an Erd\H{o}s discrepancy formula}
+\label{fig:EDP}
+\end{figure}
+
+Be aware that look-ahead heuristics are very expensive. As a consequence it pays of 
+to simplify the formula before splitting it into many subproblems. For 
+really large problems this is absolutely crucial. The main folder contains
+a script that uses {\tt lingeling} to simplify the formula using various 
+variable and clause elimination techniques and short (incomplete) runs of CDCL. 
+The default use of the simplification script is as follows:
+
+\begin{verbatim}
+   ./simplify.sh <input-file>
+\end{verbatim}
+
+This script produces the file {\tt reduced.cnf} in the main directory.
+
+\section{Motivating Example and Hidden Strength}
+
+Cube-and-conquer is not only useful to partition a hard problem into many subproblems that can be solved in parallel, 
+but also to improve performance of solving a (sub)problem on a single core. Let $N$ be the number of cubes in a partition. 
+The problem is solved with pure CDCL if $N=1$, while it is solved
+using pure look-ahead for very large $N$.
+
+An interesting pattern can be observed when increasing $N$, while running on a single core: First the total runtime goes up. 
+Apparently some subproblems are as hard as the original one. Afterwards, if $N$ become large enough, then the total runtime goes down and could become 
+significantly smaller compared to solving it with CDCL alone (again running both on a single core). At some point, when
+$N$ becomes really large, then runtime goes up again. At this point the cost of splitting starts to kick in and dominates 
+the total costs.
+Figure~\ref{fig:hidden} shows this pattern on a Schur number problem. Schur number problems ask whether
+the positive integers can be colored with a finite number of colors without resulting in a monochromatic solution of the equation
+$a  + b = c$.
+
+The times in Figure~\ref{fig:hidden} (y-axis) refer to the total runtime of solving all subproblems sequentially on a single CPU.
+Solving this problem with pure CDCL ($N=1$) requires roughly 1000 seconds. Splitting the problem into ten subproblems ($N=10$)
+and solving them increase the total computational costs to about 2500 seconds because 3 subproblems were almost as hard as the 
+original problem. This demonstrates that cube-and-conquer can be harmful when generating only a few subproblems.
+The total runtime starts to decrease by further increasing the number of subproblems. For this particular problem, the optimal 
+number of cubes is close to 10,000, which allows solving the problem in about 150 seconds on a single core. By solving these 
+subproblems in parallel, one can solve this problem in a few seconds. 
+
+A potential explanation of this plot is as follows. In case of few subproblems ($N=1$ and $N=10$) there exist no short refutations.
+As a consequence CDCL solvers struggle to solve (some of) these subproblems. Further splitting the problem will introduce short
+refutations that can be quickly found using CDCL. Once there are very short refutations, then splitting makes little sense and will 
+only increase the splitting costs. 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=.7\columnwidth]{histogram}
+\vspace{-10pt}
+\caption{Comparison of the total runtime in seconds (y-axis) of solving a Schur number problem using a different number of cubes (x-axis) on a single core (no parallelism).}
+\label{fig:hidden}
+\end{figure}
+
+\section{Tool Chain and File Formats}
+
+The cube-and-conquer tool chain consists of three phases: simplification, cubing, and solving. The simplification phase is optional. 
+Input files for the simplification and the cubing phases should be in the {\sc dimacs} format. Figure~\ref{figure:input-formats} shows
+an example input file ({\tt tests/Rivest.cnf}). The syntax of {\sc dimacs} is shown below. 
+
+\begin{figure}[!htb]
+\centering
+~~~
+\begin{minipage}[t]{.22\textwidth}
+\centering
+\vspace{-67pt}
+{ {\sc dimacs}}
+\begin{Verbatim}[frame=single]
+ p cnf 4 8
+  1  2 -3 0
+ -1 -2  3 0
+  2  3 -4 0
+ -2 -3  4 0
+ -1 -3 -4 0
+  1  3  4 0
+ -1  2  4 0
+  1 -2 -4 0
+  
+\end{Verbatim}
+\end{minipage}
+~~
+\begin{minipage}[t]{.22\textwidth}
+\centering
+\vspace{-67pt}
+{ {\sc inccnf}}
+\vspace{-0.048cm}
+\begin{Verbatim}[frame=single]
+ p inccnf
+  1  2 -3 0
+ -1 -2  3 0
+  2  3 -4 0
+ -2 -3  4 0
+ -1 -3 -4 0
+  1  3  4 0
+ -1  2  4 0
+  1 -2 -4 0
+ a 1 0
+ \end{Verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}{.45\textwidth}
+\caption{A propositional formula in the  {\sc dimacs} format (left) and the  {\sc inccnf} format (right). 
+These formats differ in the header and the {\sc inccnf} format facilitates to including cube lines (starting with {\tt a}).
+Positive numbers refer to positive literals,  while negative literals refer to negative literals.
+Each non-header line terminates with a {\tt 0}. }
+\label{figure:input-formats}
+\end{minipage}
+%\vspace{-20pt}
+\end{figure}
+
+
+\begin{eqnarray*}   
+   \langle \mathrm{dimacs} \rangle           &=& ``\mathrm{p~cnf}" \{\langle \mathrm{pos} \rangle\}  \{\langle \mathrm{pos} \rangle\} \{ \langle \mathrm{clause} \rangle \}\\
+   \langle \mathrm{clause} \rangle         &=&  \{  \langle \mathrm{lit} \rangle \} ``0"\\
+   \langle \mathrm{lit} \rangle                 &=&  \langle \mathrm{pos} \rangle \mid  \langle \mathrm{neg} \rangle\\
+   \langle \mathrm{pos} \rangle              &=&  ``1" \mid  ``2" \mid \dots \mid  \langle \mathrm{max-idx} \rangle\\
+   \langle \mathrm{neg} \rangle              &=& ``\mathrm{-}" \langle \mathrm{pos} \rangle\\
+\end{eqnarray*}
+
+
+\noindent
+The interface between the cube and conquer solvers are {\sc cube} files, which consist of a
+sequence of cubes. Files in the {\sc cube} format have the following syntax.
+\begin{eqnarray*}   
+   \langle \mathrm{cube} \rangle         &=& ``\mathrm{a}" \{  \langle \mathrm{lit} \rangle \} ``0"\\
+\end{eqnarray*}
+The ``a" in {\sc cube} files refers to {\em assumption}. The intended meaning is that the 
+incremental SAT solver will solve the formula under the assumption that all literals in the
+cube are true. If the solver cannot find a solution under these assumptions, then at least
+one of the literals must be assigned to false in any solution of the formula. 
+
+The incremental versions of {\tt Glucose} and {\tt Lingeling},  named
+ {\tt iGlucose} respectively {\tt iLingeling}, require input files in the {\sc inccnf}
+format. The {\sc inccnf} format modifies the the {\sc dimacs} format in two 
+ways. First, the header line (the line starting with {\tt p cnf}) is replaced the
+line {\tt p inccnf}. In contrast to {\sc dimacs}, the header line in {\sc inccnf} files
+does not contain the number of variables and clauses. Second, the {\sc inccnf} files
+can include cubes. The syntax is shown below.
+\begin{eqnarray*}   
+   \langle \mathrm{inccnf} \rangle         &=& ``\mathrm{p~inccnf}" \{  \langle \mathrm{clause} \mid  \mathrm{cube} \rangle \}\\
+\end{eqnarray*}
+
+Although the {\sc inccnf} format allows interleaving clauses and cubes, this feature is not used here. 
+In the cube-and-conquer setting, the {\sc inccnf} consist of two blocks of which the first one
+is a sequence of clauses and the second one a sequence of cubes. 
+
+\section{Splitting Options}
+
+The default options are set to result in an effective splitting on a wide
+spectrum of formulas. However, changing some of the heuristics can
+generally improve the quality of the splitting for specific instances. This
+section provides on overview of the options, while the next section 
+offers some specific guidance how to modify the heuristics. 
+
+The command line options of {\tt march\_cu} are listed by using the {\tt -h} option
+and are shown below. 
+
+
+\begin{verbatim}
+c march_cu help
+c USAGE: ./march_cu <input-file> [options]
+
+   where input may be in (uncompressed) DIMACS.
+
+c OPTIONS:
+
+   -h            prints this help message
+   -p            plain / no cube mode
+   -d <int>      set a static cutoff depth (default:    0, dynamic depth)
+   -n <int>      set a static cutoff vars  (default:    0, dynamic depth)
+   -e <float>    set a down exponent       (default: 0.30,   fast cubing)
+   -f <float>    set a down fraction       (default: 0.02,   fast cubing)
+   -l <int>      limit the number of cubes (default:    0,      no limit)
+   -s <int>      seed for heuristics       (default:    0,     no random)
+   -#            #SAT preprocessing only
+
+c OPTIONAL LOOKAHEAD TECHNIQUES (option will negate the default):
+
+   -gah          global autarky heuristic  (default: on)
+   -imp          add both implications     (default: on)
+   -wfr          add windfall resolvents   (default: on)
+
+c OUTPUT OPTIONS:
+
+   -o <file>     emit the cubes to <file>  (default: /tmp/cubes.icnf)
+   -q            turn on quiet mode        (set default output to stdout)
+   -cnf          add the cnf to the cubes
+
+c MAGIC CONSTANTS:
+
+   -bin <float>  binary clause weight      (default:  25.00)
+   -dec <float>  size exponential decay    (default:   0.50)
+   -min <float>  minimum heuristic value   (default:   8.00)
+   -max <float>  maximum heuristic value   (default: 550.00)
+   -sli <int>    singlelook iterations     (default:      9)
+   -dli <int>    doublelook iterations     (default:      2)
+\end{verbatim}
+
+\subsection{Main Options}
+\label{sec:opt:main}
+
+A crucial heuristic in cube-and-conquer is determining when to cut off splitting and solve the resulting subformula using CDCL. 
+The heuristic is dynamic and update rely on a technique called failed literal elimination. Recall that a look-ahead consists of
+picking a literal $l$; assigning it to true; and simplify the formula under that assignment. Whenever the simplification results in a
+conflict, then literal $l$ is called a failed literal. Look-ahead solvers force failed literals to false and simplify the formula, known as
+failed literal elimination. This simplification can also result in a conflict. In that case we state that failed literal elimination refutes
+that node (or the subformula represented by that node).
+
+The dynamic heuristic assumes the following: if failed literal elimination is able to refute a certain subformula, 
+then CDCL can solve that subformula as well as similar subformulas more efficiently. Each time failed literal elimination refutes
+a subformula a heuristic value of the formula is computed. This heuristic value can be based on various statistics, such as the
+number of variables or the number of binary clauses. A favorable property of the heuristic value is that it only decreases when 
+descending in the search-tree. This holds for the number of variables,  but not for the number of binary clauses. In this subsection
+we assume that the heuristic value is the measured by counting the number of variables (which is the default in {\tt march\_cu}).
+
+\subsubsection{Limiting the cube generation.}
+
+Generating subproblems is the main functionality of {\tt march\_cu}. However, the tool can be turned into a pure look-ahead
+solver using the {\tt -p} option (short for plain) that turns of cubing and thus splits every node until failed literal elimination can refute the node.
+
+Two options in {\tt march\_cu} will replace the dynamic heuristic by a static one. The first such option is {\tt -d D}, which will 
+cut off splitting after depth {\tt D}. For example, running the solver using option {\tt -d 10} produces at most $1024~(= 2^{10})$
+cubes. The second such option is {\tt -n N}, which will cut off splitting after the number of variables drops below {\tt N}.
+For both these options holds the following: If failed literal elimination is able to refute a subformula, then that subformula is not
+split resulting in fewer cubes in the output. As a consequence, some cubes may have fewer than {\tt D} literals when using the
+{\tt -d D} option and subformulas may have more than {\tt N} variables when using the  {\tt -n N} option.
+
+% Mention that N is the number of variables as in the current state of march_cu
+
+The option {\tt -l L} post-processes the resulting cubes by emitting at most {\tt L} cubes. This option only kicks in after the cubing
+is finished and when the number of generated cubes is larger than {\tt L}. For each node (including the internal nodes) in the
+search-tree the heuristic value is stored. The {\tt -l L} option repeats the following: while the number of cubes is larger than {\tt L};
+let $v$ be an internal node with the highest heuristic value; remove both leaf nodes that are children of $v$ from the search-tree.
+
+
+\subsubsection{The update mechanism.}
+The dynamic heuristic is based on a mechanism that approximates the optimal number to realize fast performance.
+The mechanism stops splitting if the number of remaining variables in a node (subproblem) drops below the value of parameter $\delta$. 
+%The number of remaining variables is a useful measure as it strictly decreases, whereas
+%number of binary clauses can oscillate. Initial experiments showed that such oscillation can slowdown the solver on easy problems.
+We initialize $\delta$ to $0$, meaning that we keep splitting until $\delta$ is increased. We only increase $\delta$ when failed literal elimination
+can refute a node, which naturally terminates splitting. In this case, $\delta$ is set to the number of remaining variables in that node.
+%The increase is motivated as follows: If look-ahead techniques can refute a node, then we expect CDCL to
+%refute that node---as well as similar nodes---more efficiently.
+%
+The value of $\delta$ is decreased in each node of the search-tree to ensure that  failed literal elimination
+refutes nodes once in a while. Experiments with various 
+methods to implement the decrement showed  that the size of the decrease should 
+be related to the depth of a node in the search-tree. The closer a node is to the root, the larger the decrement.
+The following update function is used in {\tt march\_cu} (with $d$ referring to the depth of the node that performs the update and 
+parameter ${\tt E}$ referring to  {\em down exponent} and parameter ${\tt F}$ referring to the {\em down factor}): 
+%
+\[
+\delta := \delta \big(1 - {\tt F}^{d^{\tt E}}\big)
+\]
+%
+If the value of ${\tt F}$ is close to $0$, then $\delta$ climbs to a value at which look-ahead techniques 
+will rarely refute a node. On the other hand, if the value of ${\tt F}$ is close to $1$, then $\delta$ drops quickly 
+to $0$, so that practically all leaf nodes will be refuted by look-ahead techniques. The value of ${\tt E}$ determines
+the influence of the depth. If ${\tt E}$ is close to $0$, then the depth is ignored during the update, while if ${\tt E}$ is
+close to $1$ (or even larger), then the depth is dominant.  
+The default values for the down exponent and down factor in {\tt march\_cu} are: ${\tt E} = 0.3$ and ${\tt F} = 0. 02$.
+These values result in fast cubing. Examples of combinations of values that result in similar partitions are:
+${\tt E} = 0.5$ and ${\tt F} = 0.1$ as well as ${\tt E} = 1.0$ and ${\tt F} = 0.6$. To change the down exponent and down factor
+use the options {\tt -e E} and {\tt -e F}, respectively.
+
+
+\subsubsection{Random value selection heuristic.} Given a decision variable, {\tt march\_cu} assigns it to the truth value that results
+in the largest reduction. This generally produces short cubes first and long cubes near the end. In some cases, this might
+result in a far from linear progress bar. This can be countered by making the truth value assignment random. Providing a seed
+using the {\tt -s S} option turns on random truth values with seed {\tt S}.
+
+\subsubsection{Splitting and counting.} Some techniques in {\tt march\_cu} eliminate solutions, although they preserve satisfiability.
+An example of such a technique is pure literal elimination: If a variable occurs only in one polarity, then it is fixed to that polarity. 
+These techniques cannot be used, when one wants to count the number of solutions of a formula using cube-and-conquer. The
+option {\tt -\#} turns off all techniques that elimination solutions.
+
+
+\subsection{Optional look-ahead techniques}
+
+The heuristics in the {\tt march\_cu} solver have been optimized over the years to achieve fast performance on a wide spectrum
+of formulas --- as a standalone solver. Effective heuristics for solving are generally also effective heuristics for splitting. However,
+we observed that this may not be the case for the three heuristics described in this subsection. The options allow to turn
+them off. 
+
+An autarky is an assignment that satisfies all clauses that are touched (i.e., have at least one assigned literal) by the assignment.
+In case an autarky is found, then one can remove all clauses touched by the autarky, while preserving satisfiability. Autarkies are
+potentially very powerful, but hardly observed in practice. However, the technique {\em global autarky heuristic} that tries to increase
+the probability of finding an autarky is generally quite effective. The global autarky heuristic restricts decision literals to occur in 
+clauses that are touched, but not satisfied by the current assignment. A side-effect of this heuristic is that it can significantly reduce
+the look-ahead costs on large formulas as the restriction is also applied on look-aheads. The global autarky heuristic amplifies the 
+effect of the decision heuristics as future decisions will depend on earlier decisions. This also means that the global autarky heuristic
+tend to make poor heuristics worse. The option {\tt -gah} allows turning this heuristic off. 
+
+Look-aheads are not only used to determine decision variables, but also to learn local binary clauses, also known as windfall resolvents.
+These local binary clauses help solve and split problems faster. However, turning off learning local binary clauses can be helpful to generate easier subproblems.
+The option {\tt -wfr} fully turns off adding windfall resolvents, while the option {\tt -imp} turns off the addition of the less useful windfall resolvents.
+
+\subsection{Output options}
+
+When {\tt march\_cu} is running in the cube producing mode (the default), then it emits a sequence of cubes to the default 
+output file {\tt /tmp/cubes.icnf}. The option {\tt -o} allows to change the output file. Alternatively, the cubes can be printed to
+stdout using the {\tt -q} option. This will suppress all other output to stdout. The output file does not include the {\tt p inccnf}
+header and the clauses of the input formula. Both of them can be added to the output file using the {\tt -cnf} option.
+
+\subsection{Magic constants}
+\label{sec:opt:magic}
+
+The look-ahead evaluation function measures the difference between a formula before and after a look-ahead. 
+The difference is computed by the weighted sum of {\em new} clauses, i.e, those clauses that exist in the formula after the look-ahead, but
+not in the formula before the look-ahead. In other words, new clauses are the clauses that were reduced in length, but not satisfied
+during a look-ahead.
+
+The difference is computed by multiplying the weights of literals in new clauses. These literal weights are computed in each node
+of the search tree. Occurrences in smaller clauses result in higher weights. The weight of occurring in a ternary clause is fixed to 1.
+The {\tt -bin} option allows setting the weight of occurring in a binary clause. The observed best weight for binary clauses is 3.3 for random $k$-SAT formulas.
+%This default value appears to be useful for many non-random formulas as well.
+However, for some other formulas higher weights will improve the quality of the splitting. For example, using weight 8 instead of 3.3
+significantly improves performance on the Boolean Pythagorean Triples problem. The default value is 8.
+
+In case a literal occurs in long clauses, i.e., clauses with length $l > 3$, then the weight is set to $w^{l-3}$ in which $w$ is the exponential decay parameter 
+that can be set using the {\tt -dec} option. The default value for {\tt -dec} is 0.5, but lower values have been observed to improve the 
+performance on some problems.
+
+The literal weights are computed using an iterative process. At the end of each iteration the weights are normalized. After normalization
+some weights tend to be very small or very large, which reduces the effectiveness of the heuristics. Two magic constants are introduced
+to make sure that literal weights are in between a certain range after normalization. The minimal value of this range can be set using
+the {\tt -min} option, while the maximum value of this range can be set using the {\tt -max} option. The default values tend to work
+well on many problems. 
+
+The final magic constants influence the accuracy of look-ahead technique. Eliminating a failed literal makes the heuristic values
+of look-aheads inaccurate as they have been computed on a different formula. It typically pays off to recompute the heuristic 
+values, because more accurate heuristic values result in better decisions. Also, a failed literal may turn other literals into failed
+literals too, which can be computed by recomputing the heuristic value. However, the number of times the 
+heuristic value can be recomputed in a single node of the search-tree should be limited in order to avoid extreme cases.
+This limit is my default 9 for single depth look-aheads  and 2 for double depth look-aheads. These values can be changed using
+the command line options {\tt -sli} and {\tt -dli}, respectively. For most heuristics hold that: what is good for pure look-ahead is 
+good for cubing. However, this is not the case for these two limits. For pure look-ahead these limits should be high, while for 
+cubing these values should be low. For several formulas it is best to set them to 0, thereby turning the recomputation of 
+the heuristic values off.
+
+\section{Solving Hard Problems using Cube-and-Coquer}
+
+Cube-and-conquer has been developed to solve hard problems efficiently and to achieve linear-time speedups even when using
+thousands of cores. Other paradigms, such as CDCL, are likely to be more effective on easy problems. This section offers some 
+options to improve the performance to cube phase of cube-and-conquer for hard problems. 
+
+\subsection{Determine the Hardness}
+
+The first step of solving a hard problem is to estimate its hardness. A rough estimate of the hardness is the fraction of nodes that can
+be refuted using failed literal elimination. For example, consider the following line in
+the output of {\tt march\_cu} (also in Figure~\ref{fig:EDP}):
+%
+\begin{verbatim}
+   c number of cubes 64941, including 1519 refuted leaves
+\end{verbatim}
+%
+In this case the number of nodes that were refuted using failed literal elimination is 1519 (out of 64941 nodes in the search-tree). 
+These numbers suggest that the problem is easy. 
+
+For hard problems it will be costly to run {\tt march\_cu} using the default parameter settings. In order to determine the hardness 
+of such problems, it is best to limit the cube generation, for example using the {\tt -d} option (see Section~\ref{sec:opt:main}).
+Below are the statistics of running {\tt march\_cu} with various depth limits on the Boolean Pythagorean Triples problem, which requires roughly 4 CPU
+years to solve (using cube-and-conquer and optimized heuristics). 
+%
+\begin{verbatim}
+  -d 16:  c number of cubes 65516, including 8 refuted leaves
+  -d 17:  c number of cubes 130997, including 32 refuted leaves
+  -d 18:  c number of cubes 261883, including 123 refuted leaves
+  -d 19:  c number of cubes 523030, including 768 refuted leaves
+  -d 20:  c number of cubes 1041915, including 4016 refuted leaves
+\end{verbatim}
+%
+Alternatively, one can limit the cube generation based on the number of variable using the {\tt -n} option (see Section~\ref{sec:opt:main}).
+
+Problems for which {\tt march\_cu} cannot refute any subproblem at a reasonable depth (say 20) should be considered too hard
+and not solvable with existing techniques. 
+
+\subsection{Optimizing the Heuristics}
+
+The default heuristics in {\tt march\_cu} aim to produce effective splitting on a wide range of propositional formulas. However, for 
+most problems it pays off to manually optimize the heuristics to improve the quality of the splittings. The most important 
+heuristic parameters can be updated via the command line using the options described in Section~\ref{sec:opt:magic}.
+Optimizing the heuristics requires selecting useful subproblems of the hard formula.
+This can be done as follows: Fist determine the depth for which the number of refuted nodes is at least 1000. In the above example
+of the Boolean Pythagorean Triples problem, this depth is 20. Second, randomly pick about 100 subproblems (cubes) of the partition on that depth.
+Second, solve these 100 subproblems and select the 10 hardest ones for the optimization.
+
+The repository contains a script that produces the corresponding subproblem of a given formula and cube by simply adding
+the literals in the cube as unit clauses to the formula. An example execution of the script is shown below.
+
+\begin{verbatim}
+./apply.sh tests/Rivest.cnf tests/Rivest.cubes 3 > tests/sub3.cnf
+\end{verbatim}
+
+It is important to consider both the cube solver and conquer solver times when optimizing the heuristics. 
+The {\tt cube-glucose.sh} script is useful for this purpose. This script will forward all the command line
+options to the cube solver {\tt march\_cu}. For example, the command 
+%
+\begin{verbatim}
+./cube-glucose.sh tests/ptn-easy.cnf -dli 0
+\end{verbatim}
+%
+will increase the runtime of the cube solver, but reduces the runtime of the conquer solver. The total
+runtime, however, is similar compared to running the script with the default setting of {\tt -dli 2}.
+
+Optimizing the heuristics fully automatically is a direction of future research.
+
+%The {\tt march\_cu} solver can be used for this purpose by
+%running it with a very small down factor (the {\tt -f F} option, see Section~\ref{sec:opt:main}).
+%The update mechanism assumes that failed literal elimination can regularly refute nodes of the search-tree. If that is not the case
+%then cubing will be very costly. There are generally two reasons for which the assumption fails: the problem is too hard or the 
+%heuristics are poor. This section offers some suggestions to deal with the second reason. 
+
+\subsection{Two-Level Partition}
+\label{sec:two-level}
+
+In order to achieve strong performance, it is important to balance the costs of the cube and conquer phases. For many problems
+it appears that a 50\%/50\% balance is effective. As cube generation will consume about half the computational resources, it should be performed in parallel (not only solving
+the subproblems). This can be achieved using a two-level partition: 1) compute a top-level partition by limiting the cube 
+generation using either the {\tt -d} or {\tt -n} option (on a single core); and 2) partition each of the resulting subproblems in parallel without
+limiting the cube generation. In general it is better to use the {\tt -n} option for creating the top-level partition as the subproblem
+that are generated using the {\tt -d} option tend to differ a lot in difficulty. Determining a useful limit for the {\tt -n} option can be somewhat challenging. 
+The easiest option is to use the ``average weight cubes" reported by {\tt march\_cu} (see Figure~\ref{fig:EDP}), while generating cubes
+using the {\tt -d} option.
+
+\section{Proofs and Validation}
+
+The {\tt iGlucose} solver supports emitting a proof of unsatisfiability by extending the
+solver call with {\tt -certified -certified-output=proof | grep -v bound}. This produces the 
+proof of unsatisfiability in the file {\tt proof} and ignores all output of solving the subformulas. 
+The repository includes a script to produce a proof automatically. For example:
+
+\begin{verbatim}
+./cube-glucose-proof.sh tests/eq.atree.braun.8.unsat.cnf 
+\end{verbatim}
+
+The {\tt proof} file is in the {\sc drat} format and can be checked with the tool {\tt drat-trim}. 
+This tool is available at \url{https://github.com/marijnheule/drat-trim}. After installing this
+tool in the home directory, the proof can be checked using the following command:
+
+\begin{verbatim}
+~/drat-trim/drat-trim tests/eq.atree.braun.8.unsat.cnf proof
+\end{verbatim}
+
+This results in the following proof checking log:
+
+\begin{verbatim}
+c parsing input formula with 684 variables and 2300 clauses
+c finished parsing
+c detected empty clause; start verification via backward checking
+c 2248 of 2300 clauses in core                            
+c 118143 of 133661 lemmas in core using 13573339 resolution steps
+c 0 RAT lemmas in core; 117929 redundant literals in core lemmas
+s VERIFIED
+c verification time: 7.140 seconds
+\end{verbatim}
+
+\section{Additional Tools}
+
+Cube files can become very large when solving hard formulas. The repository contains lightweight compression tools to
+significantly shrink these files. The tools are based on two compression techniques. First, the cube files generated by 
+{\tt march\_cu} form an assignment tree and each of the cubes represent a leaf node in this assignment tree. Storing the 
+tree instead, using only one literal per node of the tree results in a substantial reduction. Second, instead of storing
+the numbers in ASCII format, they can be stored a binary format. This optimization results to an additional
+reduction of $40\%$ on average.
+
+A cube file can be compressed using the following command:
+%
+\begin{verbatim}
+   ./tools/cube-encode test.cubes test.binc
+\end{verbatim}
+%
+where the input file {\tt test.cubes} is  a sequence of cubes that form an assignment tree (as emitted by {\tt march\_cu}). The output
+file {\tt test.binc} is a binary file.
+
+Decompressing {\tt  test.binc} into {\tt test.cubes} can be performed using:
+
+\begin{verbatim}
+   ./tools/cube-decode  test.binc > test.cubes
+\end{verbatim}
+
+%
+%\section{Conclusions}
+
+\bibliography{references}
+\bibliographystyle{splncs}
+
+\end{document}

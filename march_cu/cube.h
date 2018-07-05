@@ -30,6 +30,7 @@ int  Dnode_right (int index);
 void Dnode_init  (int index);
 void Dnode_close (int index);
 
+int  getNodes ();
 void printDecisionNode (struct Dnode Dnode, int depth, int dis, int max);
 void printUNSAT ();
 void printDecisionTree ();

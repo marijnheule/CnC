@@ -80,22 +80,22 @@ int main (int argc, char** argv) {
       printf("c OPTIONS:\n\n");
       printf("   -h            prints this help message\n");
       printf("   -p            plain / no cube mode\n");
-      printf("   -c <file>     parse cube from <file>    (default:             no cube)\n");
+//      printf("   -c <file>     parse cube from <file>    (default:             no cube)\n");
       printf("   -d <int>      set a static cutoff depth (default: %4.0f, dynamic depth)\n", (float) cut_depth);
       printf("   -n <int>      set a static cutoff vars  (default: %4.0f, dynamic depth)\n", (float) cut_var);
       printf("   -e <float>    set a down exponent       (default: %4.2f,   fast cubing)\n", downexp);
       printf("   -f <float>    set a down fraction       (default: %4.2f,   fast cubing)\n", fraction);
       printf("   -l <int>      limit the number of cubes (default: %4.0f,      no limit)\n", (float) cubeLimit);
       printf("   -s <int>      seed for heuristics       (default: %4.0f,     no random)\n", (float) seed);
-      printf("   -#            #SAT preprocessing only\n");
-      printf("   -q            turn on quiet mode        (set default output to stdout)\n");
-      printf("   -v            more verbose output\n\n");
+      printf("   -#            #SAT preprocessing only\n\n");
+//      printf("   -v            more verbose output\n\n");
       printf("c OPTIONAL LOOKAHEAD TECHNIQUES (option will negate the default):\n\n");
       printf("   -gah          global autarky heuristic  (default: %s)\n",  (GAH)?"on":"off");
       printf("   -imp          add both implications     (default: %s)\n",  (IMP)?"on":"off");
       printf("   -wfr          add windfall resolvents   (default: %s)\n\n",(WFR)?"on":"off");
       printf("c OUTPUT OPTIONS:\n\n");
       printf("   -o <file>     emit the cubes to <file>  (default: %s)\n", cubesFile);
+      printf("   -q            turn on quiet mode        (set default output to stdout)\n");
       printf("   -cnf          add the cnf to the cubes\n\n");
       printf("c MAGIC CONSTANTS:\n\n");
       printf("   -bin <float>  binary clause weight      (default: %6.2f)\n", H_BIN);
@@ -229,6 +229,9 @@ int main (int argc, char** argv) {
 		result = UNSAT;
 	}
         if (quiet_mode == 0) {
+#ifdef CUBE
+          nodeCount = getNodes ();
+#endif
           printf ("c main():: nodeCount: %i\n", nodeCount);
           printf ("c main():: dead ends in main: %i\n", mainDead);
           printf ("c main():: lookAheadCount: %lli\n", lookAheadCount);
