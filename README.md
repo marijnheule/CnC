@@ -39,7 +39,6 @@ c OPTIONS:
 
    -h            prints this help message
    -p            plain / no cube mode
-   -c <file>     parse cube from <file>    (default:             no cube)
    -d <int>      set a static cutoff depth (default:    0, dynamic depth)
    -n <int>      set a static cutoff vars  (default:    0, dynamic depth)
    -e <float>    set a down exponent       (default: 0.30,   fast cubing)
@@ -47,8 +46,6 @@ c OPTIONS:
    -l <int>      limit the number of cubes (default:    0,      no limit)
    -s <int>      seed for heuristics       (default:    0,     no random)
    -#            #SAT preprocessing only
-   -q            turn on quiet mode        (set default output to stdout)
-   -v            more verbose output
 
 c OPTIONAL LOOKAHEAD TECHNIQUES (option will negate the default):
 
@@ -59,14 +56,15 @@ c OPTIONAL LOOKAHEAD TECHNIQUES (option will negate the default):
 c OUTPUT OPTIONS:
 
    -o <file>     emit the cubes to <file>  (default: /tmp/cubes.icnf)
+   -q            turn on quiet mode        (set default output to stdout)
    -cnf          add the cnf to the cubes
 
 c MAGIC CONSTANTS:
 
-   -bin <float>  binary clause weight      (default:   3.30)
+   -bin <float>  binary clause weight      (default:  25.00)
    -dec <float>  size exponential decay    (default:   0.50)
-   -min <float>  minimum heuristic value   (default:   0.10)
-   -max <float>  maximum heuristic value   (default:  25.00)
+   -min <float>  minimum heuristic value   (default:   8.00)
+   -max <float>  maximum heuristic value   (default: 550.00)
    -sli <int>    singlelook iterations     (default:      9)
    -dli <int>    doublelook iterations     (default:      2)
 ```
