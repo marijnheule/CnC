@@ -665,7 +665,6 @@ int march_solve_rec() {
 #ifdef FLIP_BIAS
 	    branch_literal *= -1;
 #endif
-
 //	    printf("c branch literal %i", branch_literal );
 	}
 	while( (percentage_forced > 50.0) || (branch_literal == 0) );

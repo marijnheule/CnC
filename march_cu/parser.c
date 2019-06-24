@@ -259,6 +259,7 @@ int simplify_formula () {
   do {
     _iterCounter  = bi_equivalences + nrofvars - freevars;
 
+
     tautologies += sort_literals();
     if (find_and_propagate_unary_clauses () == UNSAT) return UNSAT;
     satisfied  += compactCNF ();
@@ -268,6 +269,8 @@ int simplify_formula () {
       bi_equivalences += find_and_propagate_binary_equivalences ();
       if (check_vadility_equivalences () == UNSAT) return UNSAT; }
 #endif
+
+
   } while ((bi_equivalences + nrofvars - freevars) > _iterCounter);
 
   return SAT; }
