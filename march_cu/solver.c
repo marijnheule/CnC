@@ -940,11 +940,12 @@ void reduce_big_occurences (const int clause_index, const int nrval) {
     if (lit != nrval) {
       int *clauseSet = clause_set[lit];
       while (1) {
+//        assert (*clauseSet != LAST_CLAUSE);
         if (*(clauseSet++) == clause_index) {
           clauseSet[ -1 ] = clause_set[ lit ][ big_occ[ lit ] - 1 ];
           clause_set[ lit ][ big_occ[ lit ] - 1 ] = LAST_CLAUSE;
-          break; } } }
-    big_occ[lit]--; } }
+          break; } }
+       big_occ[lit]--; } } }
 
 int DPLL_update_datastructures( const int nrval )
 {
@@ -1409,9 +1410,9 @@ void restore_big_occurences (const int clause_index, const int nrval) {
   int *clause = clause_list[ clause_index ];
   while (*clause != LAST_LITERAL) {
     int lit = *(clause++);
-    if (lit != nrval)
+    if (lit != nrval) {
       clause_set[ lit ][ big_occ[ lit ] ] = clause_index;
-      big_occ[ lit ]++; } }
+      big_occ[ lit ]++; } } }
 
 void restore_implication_arrays (const int nrval) {
   int i, *bImp;
