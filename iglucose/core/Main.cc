@@ -202,6 +202,15 @@ int main(int argc, char** argv)
           printf ("] time remaining: %.2f seconds ", cpuTime() / done - cpuTime());
           fflush (stdout);
 
+ 	  if ( ret == l_Undef ) break;
+ 	  next_solve_bound+= inc_bound;
+
+ nextBound:;
+ 	  if ( ( ++bound > to_bound )
+ 	       || ( ret == l_True && stopAtSat )
+ 	       || ( ret == l_False && stopAtUnsat )
+ 	       ) break;
+ 	}
  	  if (res != NULL){
  	    if (ret == l_True){
  	      fprintf(res, "SAT ");
@@ -215,15 +224,9 @@ int main(int argc, char** argv)
  	      fprintf(res, "INDET\n");
  	  }
 
- 	  if ( ret == l_Undef ) break;
- 	  next_solve_bound+= inc_bound;
 
- nextBound:;
- 	  if ( ( ++bound > to_bound )
- 	       || ( ret == l_True && stopAtSat )
- 	       || ( ret == l_False && stopAtUnsat )
- 	       ) break;
- 	}
+
+
  	if (res != NULL) fclose(res);
  	gzclose(in);
 
