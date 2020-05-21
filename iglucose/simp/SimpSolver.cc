@@ -147,9 +147,17 @@ bool SimpSolver::addClause_(vec<Lit>& ps)
         return false;
 
     if(!parsing && certifiedUNSAT) {
-      for (int i = 0; i < ps.size(); i++)
-        fprintf(certifiedOutput, "%i " , (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1) );
-      fprintf(certifiedOutput, "0\n");
+      if (vbyte) {
+        write_char('a');
+        for (int i = 0; i < ps.size(); i++)
+          write_lit(ps[i]);
+        write_char(0);
+      }
+      else {
+        for (int i = 0; i < ps.size(); i++)
+          fprintf(certifiedOutput, "%i " , (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1) );
+        fprintf(certifiedOutput, "0\n");
+      }
     }
 
     if (use_simplification && clauses.size() == nclauses + 1){
@@ -203,9 +211,17 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
     subsumption_queue.insert(cr);
 
     if (certifiedUNSAT) {
-      for (int i = 0; i < c.size(); i++)
-        if (c[i] != l) fprintf(certifiedOutput, "%i " , (var(c[i]) + 1) * (-2 * sign(c[i]) + 1) );
-      fprintf(certifiedOutput, "0\n");
+      if (vbyte) {
+        write_char('a');
+        for (int i = 0; i < c.size(); i++)
+          if (c[i] != l) write_lit(c[i]);
+        write_char(0);
+      }
+      else {
+        for (int i = 0; i < c.size(); i++)
+          if (c[i] != l) fprintf(certifiedOutput, "%i " , (var(c[i]) + 1) * (-2 * sign(c[i]) + 1) );
+        fprintf(certifiedOutput, "0\n");
+      }
     }
 
     if (c.size() == 2){
@@ -213,10 +229,18 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         c.strengthen(l);
     }else{
         if (certifiedUNSAT) {
-          fprintf(certifiedOutput, "d ");
-          for (int i = 0; i < c.size(); i++)
-            fprintf(certifiedOutput, "%i " , (var(c[i]) + 1) * (-2 * sign(c[i]) + 1) );
-          fprintf(certifiedOutput, "0\n");
+          if (vbyte) {
+            write_char('d');
+            for (int i = 0; i < c.size(); i++)
+              write_lit(c[i]);
+            write_char(0);
+          }
+          else {
+            fprintf(certifiedOutput, "d ");
+            for (int i = 0; i < c.size(); i++)
+              fprintf(certifiedOutput, "%i " , (var(c[i]) + 1) * (-2 * sign(c[i]) + 1) );
+            fprintf(certifiedOutput, "0\n");
+          }
         }
 
         detachClause(cr, true);
