@@ -75,11 +75,37 @@ void assume (struct solver* S, int lit) {                          // Add the as
   if (!S->false[lit]) S->model[abs (lit)] = (lit > 0);             // Update the model using the assumption
   *S->assumeHead = lit; S->assumeHead++; }                         // To the head of the assumption stack
 
+int* offsetPointer(int* p, u_long offset){
+    u_long initial = (ulong)p;
+    int* res = (int*)(initial+offset);
+    return res;
+}
+
+void offsetSolver(struct solver* S, u_long offset){
+    S->assumptions = offsetPointer(S->assumptions, offset);
+    S->model = offsetPointer(S->model, offset);
+    S->next = offsetPointer(S->next, offset);
+    S->prev = offsetPointer(S->prev, offset);
+    S->buffer = offsetPointer(S->buffer, offset);
+    S->reason = offsetPointer(S->reason, offset);
+    S->falseStack = offsetPointer(S->falseStack, offset);
+    S->forced = offsetPointer(S->forced, offset);
+    S->processed = offsetPointer(S->processed, offset);
+    S->assigned = offsetPointer(S->assigned, offset);
+    S->false = offsetPointer(S->false, offset);
+    S->first= offsetPointer(S->first, offset);
+}
+
 int* getMemory (struct solver* S, int mem_size) {                  // Allocate memory of size mem_size
   if (S->mem_used + mem_size > S->mem_max) {                       // In case the code is used within a code base
     S->mem_max = 3 * (S->mem_used + mem_size) / 2;                 // Increase the maximum allowed memory by ~50%
     printf ("c reallocating memory to %i\n", S->mem_max);
-    S->DB = realloc (S->DB, sizeof(int) * S->mem_max); }           // And allocated the database appropriately
+    u_long olddb = (u_long)(S->DB);
+    S->DB = realloc (S->DB, sizeof(int) * S->mem_max);    // And allocated the database appropriately
+    u_long newdb = (u_long)(S->DB);
+    u_long change = newdb-olddb;
+    offsetSolver(S, change);
+  }
   int *store = (S->DB + S->mem_used);                              // Compute a pointer to the new memory location
   S->mem_used += mem_size;                                         // Update the size of the used memory
   return store; }                                                  // Return the pointer
