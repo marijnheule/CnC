@@ -186,7 +186,7 @@ int main(int argc, char** argv)
             printf("c |                                                                                                       |\n"); }
 
         if (!S.okay()){
-            if (S.certifiedUNSAT) fprintf(S.certifiedOutput, "0\n"), fclose(S.certifiedOutput);
+            if (S.certifiedUNSAT && !S.vbyte) fprintf(S.certifiedOutput, "0\n"), fclose(S.certifiedOutput);
             if (res != NULL) fprintf(res, "UNSAT\n"), fclose(res);
             if (S.verbosity > 0){
  	        printf("c =========================================================================================================\n");
