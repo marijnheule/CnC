@@ -79,7 +79,23 @@ int* getMemory (struct solver* S, int mem_size) {                  // Allocate m
   if (S->mem_used + mem_size > S->mem_max) {                       // In case the code is used within a code base
     S->mem_max = 3 * (S->mem_used + mem_size) / 2;                 // Increase the maximum allowed memory by ~50%
     printf ("c reallocating memory to %i\n", S->mem_max);
-    S->DB = realloc (S->DB, sizeof(int) * S->mem_max); }           // And allocated the database appropriately
+    int* tmp = realloc (S->DB, sizeof(int) * S->mem_max);
+    if (tmp == NULL)                                               // Ensure that memory allocation succeeded
+        printf ("c allocation failed\n"), exit(1);
+    S->assumptions += tmp - S->DB;                                 // Adjust pointers to previously allocated memory
+    S->model       += tmp - S->DB;
+    S->next        += tmp - S->DB;
+    S->prev        += tmp - S->DB;
+    S->buffer      += tmp - S->DB;
+    S->reason      += tmp - S->DB;
+    S->falseStack  += tmp - S->DB;
+    S->forced      += tmp - S->DB;
+    S->processed   += tmp - S->DB;
+    S->assigned    += tmp - S->DB;
+    S->false       += tmp - S->DB;
+    S->first       += tmp - S->DB;
+    S->DB = tmp;                                                   // Allocate the database appropriately
+  }
   int *store = (S->DB + S->mem_used);                              // Compute a pointer to the new memory location
   S->mem_used += mem_size;                                         // Update the size of the used memory
   return store; }                                                  // Return the pointer

@@ -163,7 +163,7 @@ sys	0m19.779s
 \label{fig:EDP}
 \end{figure}
 
-Be aware that look-ahead heuristics are very expensive. As a consequence it pays of 
+Be aware that look-ahead heuristics are very expensive. As a consequence it pays off 
 to simplify the formula before splitting it into many subproblems. For 
 really large problems this is absolutely crucial. The main folder contains
 a script that uses {\tt lingeling} to simplify the formula using various 
@@ -377,7 +377,7 @@ we assume that the heuristic value is the measured by counting the number of var
 \subsubsection{Limiting the cube generation.}
 
 Generating subproblems is the main functionality of {\tt march\_cu}. However, the tool can be turned into a pure look-ahead
-solver using the {\tt -p} option (short for plain) that turns of cubing and thus splits every node until failed literal elimination can refute the node.
+solver using the {\tt -p} option (short for plain) that turns off cubing and thus splits every node until failed literal elimination can refute the node.
 
 Two options in {\tt march\_cu} will replace the dynamic heuristic by a static one. The first such option is {\tt -d D}, which will 
 cut off splitting after depth {\tt D}. For example, running the solver using option {\tt -d 10} produces at most $1024~(= 2^{10})$
@@ -423,7 +423,7 @@ close to $1$ (or even larger), then the depth is dominant.
 The default values for the down exponent and down factor in {\tt march\_cu} are: ${\tt E} = 0.3$ and ${\tt F} = 0. 02$.
 These values result in fast cubing. Examples of combinations of values that result in similar partitions are:
 ${\tt E} = 0.5$ and ${\tt F} = 0.1$ as well as ${\tt E} = 1.0$ and ${\tt F} = 0.6$. To change the down exponent and down factor
-use the options {\tt -e E} and {\tt -e F}, respectively.
+use the options {\tt -e E} and {\tt -f F}, respectively.
 
 
 \subsubsection{Random value selection heuristic.} Given a decision variable, {\tt march\_cu} assigns it to the truth value that results
@@ -494,13 +494,13 @@ of look-aheads inaccurate as they have been computed on a different formula. It 
 values, because more accurate heuristic values result in better decisions. Also, a failed literal may turn other literals into failed
 literals too, which can be computed by recomputing the heuristic value. However, the number of times the 
 heuristic value can be recomputed in a single node of the search-tree should be limited in order to avoid extreme cases.
-This limit is my default 9 for single depth look-aheads  and 2 for double depth look-aheads. These values can be changed using
+This limit is by default 9 for single depth look-aheads  and 2 for double depth look-aheads. These values can be changed using
 the command line options {\tt -sli} and {\tt -dli}, respectively. For most heuristics hold that: what is good for pure look-ahead is 
 good for cubing. However, this is not the case for these two limits. For pure look-ahead these limits should be high, while for 
 cubing these values should be low. For several formulas it is best to set them to 0, thereby turning the recomputation of 
 the heuristic values off.
 
-\section{Solving Hard Problems using Cube-and-Coquer}
+\section{Solving Hard Problems using Cube-and-Conquer}
 
 Cube-and-conquer has been developed to solve hard problems efficiently and to achieve linear-time speedups even when using
 thousands of cores. Other paradigms, such as CDCL, are likely to be more effective on easy problems. This section offers some 
