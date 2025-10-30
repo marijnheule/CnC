@@ -370,6 +370,7 @@ char initFile[1024];
 
 unsigned int seed, hardLimit;
 int *trail, trailSize;
+int cnf;
 
 int addIMP, addWFR, gah;
 
@@ -384,7 +385,7 @@ double sum_th, factor_th;
 double free_th;
 int part_free;
 int nr_cubes;
-unsigned int cut_depth, cut_var, dynamic;
+unsigned int cut_depth, cut_var, cut_rmvar, dynamic;
 #endif
 
 int mode, sharp_mode, quiet_mode;
@@ -422,7 +423,7 @@ int percent;
 float *Rank;
 int Rank_trigger;
 float *diff, *_diff, *size_diff, *diff_tmp, *_diff_tmp, **diff_depth, *diff_table;
-int initial_freevars;
+int initial_freevars, initial_freeentryvars;
 
 double percentage_forced;
 
@@ -459,6 +460,7 @@ int *freevarsArray;
 int nrofvars, nrofclauses, nrofceq, nroforigvars;
 int original_nrofvars, original_nrofclauses;
 int freevars, activevars, depth;
+int maxvar;
 
 int **Ceq, **Veq, **VeqLUT, *CeqValues, *CeqSizes;
 int *CeqStamps;

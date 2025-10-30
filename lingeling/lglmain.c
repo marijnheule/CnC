@@ -529,7 +529,8 @@ ERR:
       fflush (stdout);
     }
   }
-  res = lglsat (lgl);
+  if (!simponly)
+    res = lglsat (lgl);
   if (timelimit >= 0) {
     caughtalarm = 0;
     (void) signal (SIGALRM, sig_alrm_handler);

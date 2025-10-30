@@ -43,9 +43,11 @@ int main (int argc, char** argv) {
 
   hardLimit  = 0; // no hard limit
   seed       = 0; // no initial seed
+  cnf        = 0;
   quiet_mode = 0;
   cut_depth  = 0;
   cut_var    = 0;
+  cut_rmvar  = 0;
   cubeLimit  = 0;
   strcpy (cubesFile, "/tmp/cubes.icnf");
 
@@ -83,8 +85,10 @@ int main (int argc, char** argv) {
 //      printf("   -c <file>     parse cube from <file>    (default:             no cube)\n");
       printf("   -d <int>      set a static cutoff depth (default: %4.0f, dynamic depth)\n", (float) cut_depth);
       printf("   -n <int>      set a static cutoff vars  (default: %4.0f, dynamic depth)\n", (float) cut_var);
+      printf("   -r <int>      # of free vars to remove  (default: %4.0f, dynamic depth)\n", (float) cut_rmvar);
       printf("   -e <float>    set a down exponent       (default: %4.2f,   fast cubing)\n", downexp);
       printf("   -f <float>    set a down fraction       (default: %4.2f,   fast cubing)\n", fraction);
+      printf("   -m <int>      max variable to cube with (default: %4.0f,      no limit)\n", (float) maxvar);
       printf("   -l <int>      limit the number of cubes (default: %4.0f,      no limit)\n", (float) cubeLimit);
       printf("   -s <int>      seed for heuristics       (default: %4.0f,     no random)\n", (float) seed);
       printf("   -#            #SAT preprocessing only\n\n");
@@ -113,9 +117,11 @@ int main (int argc, char** argv) {
     if (strcmp(argv[i], "-q"  ) == 0) { quiet_mode = 1;                }
     if (strcmp(argv[i], "-d"  ) == 0) { cut_depth  = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-n"  ) == 0) { cut_var    = strtoul (argv[i+1], NULL, 10); }
+    if (strcmp(argv[i], "-r"  ) == 0) { cut_rmvar  = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-l"  ) == 0) { cubeLimit  = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-L"  ) == 0) { hardLimit  = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-s"  ) == 0) { seed       = strtoul (argv[i+1], NULL, 10); }
+    if (strcmp(argv[i], "-m"  ) == 0) { maxvar     = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-gah") == 0) { gah       ^= 1;                }
     if (strcmp(argv[i], "-imp") == 0) { addIMP    ^= 1;                }
     if (strcmp(argv[i], "-wfr") == 0) { addWFR    ^= 1;                }
@@ -126,15 +132,48 @@ int main (int argc, char** argv) {
     if (strcmp(argv[i], "-sli") == 0) { sl_iter    = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-dli") == 0) { dl_iter    = strtoul (argv[i+1], NULL, 10); }
     if (strcmp(argv[i], "-e"  ) == 0) { downexp    = atof (argv[i+1]); }
-    if (strcmp(argv[i], "-f"  ) == 0) { fraction   = atof (argv[i+1]); } }
+    if (strcmp(argv[i], "-f"  ) == 0) { fraction   = atof (argv[i+1]); }
+    if (strcmp(argv[i], "-cnf") == 0) { cnf        = 1;                } }
+
+  if (cnf) {
+    FILE *cubes, *in;
+    int c;
+
+    if (quiet_mode) cubes = stdout;
+    else            cubes = fopen (cubesFile, "w");
+
+    // Print icnf header
+    fprintf (cubes, "p inccnf\n");
+
+    if ((in = fopen (argv[1], "r")) == NULL) {
+      printf ("c runParser():: input file could not be opened!\n");
+      exit (EXIT_CODE_ERROR); }
+
+    // Skip the first line
+    while ((c = fgetc(in)) != EOF) {
+      if (c == '\n') {
+        break; // end of first line
+      }
+    }
+
+    // Copy the rest of the file
+    while ((c = fgetc(in)) != EOF) {
+      fputc(c, cubes);
+    }
+
+    fclose(in);
+    if (quiet_mode == 0)
+      fclose (cubes);
+  }
+
+  if (!cut_var && !cut_rmvar && !cut_depth) dynamic = 1;
 
   if ((mode != PLAIN_MODE) && (quiet_mode == 0)) {
-    printf("c down fraction = %.3f and down exponent = %.3f\n", (float) fraction, (float) downexp);
+    if (dynamic) printf("c down fraction = %.3f and down exponent = %.3f\n", (float) fraction, (float) downexp);
+    if (maxvar) printf("c maximum variable to appear in cubes is %d\n", maxvar);
     printf("c cubes are emitted to %s\n", cubesFile); }
 
   if (seed) srand (seed);
-
-  if (!cut_var && !cut_depth) dynamic = 1;
 
   /***** Parsing... *******/
   runParser (argv[1]);

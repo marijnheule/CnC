@@ -57,6 +57,7 @@ int initFormula( FILE* in )
 	nrofclauses          = 0;
         nrofceq              = 0;
 	initial_freevars     = 0;
+	initial_freeentryvars= 0;
 	non_tautological_equivalences = 0;
         lookaheadArrayLength = 0;
 	forced_literals = 0;

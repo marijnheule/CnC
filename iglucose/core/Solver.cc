@@ -185,7 +185,7 @@ void Solver::write_char (unsigned char ch) {
 }
 
 void Solver::write_lit (Lit p) {
-  int n = 2 * var(p) + sign(p);
+  int n = 2 * (var(p)+1) + sign(p);
   for (; n > 127; n >>= 7)
     write_char (128 | (n & 127));
   write_char (n);
@@ -248,12 +248,12 @@ bool Solver::addClause_(vec<Lit>& ps)
         write_char('a');
         for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
           write_lit(ps[i]);
-        write_lit(mkLit(0));
+        write_char(0);
 
         write_char('d');
         for (i = j = 0, p = lit_Undef; i < oc.size(); i++)
           write_lit(oc[i]);
-        write_lit(mkLit(0));
+        write_char(0);
       }
       else {
         for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
@@ -335,7 +335,7 @@ void Solver::removeClause(CRef cr) {
       write_char ('d');
       for (int i = 0; i < c.size(); i++)
         write_lit(c[i]);
-      write_lit (mkLit(0));
+      write_char (0);
     }
     else {
       fprintf(certifiedOutput, "d ");
@@ -1099,7 +1099,7 @@ lbool Solver::search(int nof_conflicts)
                 write_char ('a');
                 for (int i = 0; i < learnt_clause.size(); i++)
                   write_lit(learnt_clause[i]);
-                write_lit (mkLit(0));
+                write_char (0);
               }
               else {
                 for (int i = 0; i < learnt_clause.size(); i++)
@@ -1167,7 +1167,7 @@ lbool Solver::search(int nof_conflicts)
                         write_char ('a');
                         for (int i = 0; i < conflict.size(); i++)
                           write_lit(conflict[i]);
-                        write_lit(mkLit(0));
+                        write_char(0);
                       }
                       else {
                         for (int i = 0; i < conflict.size(); i++)

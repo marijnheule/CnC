@@ -24,7 +24,7 @@
 //#define DETECT_COMPONENTS
 //#define COMPENSATION_RESOLVENTS
 
-#define SAT_INCREASE	1000
+#define SAT_INCREASE	1500
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -541,7 +541,14 @@ int march_solve_rec() {
 //        if (freevars < 4800 + depth * 10)  // buildroot
 //        if (freevars < 3000)  // buildroot
 //        if (freevars < free_th)  // new default
-      if ((cut_depth && (depth == cut_depth)) || (dynamic && (freevars < free_th)) || (cut_var && (freevars < cut_var)))
+      int freeentryvars = 0;
+      for( int i = 0; i < freevars; i++ )
+      {
+        const int j = freevarsArray[ i ];
+        if(!maxvar || j <= maxvar)
+          freeentryvars++;
+      }
+      if ((cut_depth && (depth == cut_depth)) || (dynamic && (freevars < free_th)) || (cut_var && (freevars < cut_var)) || (cut_rmvar && (initial_freeentryvars - freeentryvars > cut_rmvar)))
       {
 	nodeCount--;
 	nr_cubes++;

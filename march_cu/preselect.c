@@ -59,8 +59,6 @@ void init_preselection() {
   CandidatesSet = (int*  ) malloc( sizeof( int   ) * ( nrofvars + 1 ) );
   Rank          = (float*) malloc( sizeof( float ) * ( nrofvars + 1 ) );
 
-  initial_freevars = freevars;
-
 #ifdef HIDIFF
   clause_weight = (float*) malloc( sizeof(float) * nrofbigclauses );
 #endif
@@ -125,7 +123,19 @@ void init_freevars() {
             }
 	}
 
+        int freeentryvars = 0;
+        for( int i = 0; i < freevars; i++ )
+        {
+        const int j = freevarsArray[ i ];
+        if(!maxvar || j <= maxvar)
+          freeentryvars++;
+        }
+
+        initial_freevars = freevars;
+        initial_freeentryvars = freeentryvars;
+
         if (quiet_mode == 0) {
+          if (maxvar) printf ("c number of free entry variables = %i\n", freeentryvars);
           printf ("c number of free variables = %i\n", freevars);
           printf ("c highest active variable  = %i\n", activevars); }
 #ifdef CUBE
@@ -180,6 +190,7 @@ int ConstructCandidatesSet( )
 
 	    UNFIX(_freevar);
 
+	    if( maxvar && _freevar > maxvar )                             continue;
 	    if( _freevar > original_nrofvars )                            continue;
 	    if( (VeqDepends[ _freevar ] == EQUIVALENT) && eq_check_flag ) continue;
 //	    if( VeqDepends[ _freevar ] != INDEPENDENT )                   continue;
@@ -347,6 +358,7 @@ int PreselectAll( )
         for( i = 0; i < freevars; i++ )
 	{
 	    _freevar = freevarsArray[ i ];
+	    if (maxvar && _freevar > maxvar) continue;
 	    if( (Reductions[ _freevar ] > 0) || (Reductions[ -_freevar ] > 0) ||
 		(BinaryImp[  _freevar ][ 0 ] > bImp_satisfied[  _freevar ]) ||
 		(BinaryImp[ -_freevar ][ 0 ] > bImp_satisfied[ -_freevar ]) ||

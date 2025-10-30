@@ -116,6 +116,7 @@ void printDecisionNode (struct Dnode Dnode, int depth, int discrepancies, int ta
 
 void printUNSAT () {
   if (quiet_mode) cubes = stdout;
+  else if (cnf)   cubes = fopen (cubesFile, "a");
   else            cubes = fopen (cubesFile, "w");
   if (quiet_mode == 0)
     printf  ("c number of cubes 1, including 1 refuted leaf\n");
@@ -154,6 +155,7 @@ void printDecisionTree () {
   for (i = 0; i < nrofvars; i++) cubeTrail[i] = 0;
 
   if (quiet_mode) cubes = stdout;
+  else if (cnf)   cubes = fopen (cubesFile, "a");
   else            cubes = fopen (cubesFile, "w");
 
   if (quiet_mode == 0)

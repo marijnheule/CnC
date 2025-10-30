@@ -6,7 +6,7 @@ CFLAGS	=	-O3 -fno-strict-aliasing -Wall -DNDEBUG
 CC	= 	gcc
 
 .c.o:
-		$(CC) -c $(CFLAGS) $(SATTEST) -o $@ $<
+		$(CC) -fcommon -c $(CFLAGS) $(SATTEST) -o $@ $<
 
 march_cu: march.o \
 		cube.o \
